@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Advanced Dodging Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #gameCanvas {
+            border: 2px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <canvas id="gameCanvas" width="500" height="500"></canvas>
+        <div style="text-align: center; margin-top: 10px;">
+            <p>A/D: Move Left/Right, Space: Jump</p>
+            <p>Score: <span id="scoreDisplay">0</span></p>
+        </div>
+    </div>
+
+    <script>
+        // Game configuration
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+
+        // Player properties
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height - 30,
+            width: 50,
+            height: 20,
+            speed: 5,
+            color: 'blue',
+            jumping: false,
+            jumpHeight: 200,  // Increased jump height
+            jumpSpeed: 10,    // Increased initial jump speed
+            originalY: canvas.height - 30,
+            verticalVelocity: 0,
+            gravity: 0.4      // Adjusted gravity for more control
+        };
+
+        // Balls properties
+        const balls = [];
+        const ballRadius = 10;
+        let score = 0;
+        let gameOver = false;
+
+        // Player movement
+        const keys = {
+            a: false,
+            d: false,
+            space: false
+        };
+
+        // Event listeners for key presses
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'a' || e.key === 'A') keys.a = true;
+            if (e.key === 'd' || e.key === 'D') keys.d = true;
+            if (e.key === ' ') {
+                keys.space = true;
+                // Start jump only if not already jumping
+                if (!player.jumping) {
+                    player.jumping = true;
+                    player.verticalVelocity = player.jumpSpeed;
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'a' || e.key === 'A') keys.a = false;
+            if (e.key === 'd' || e.key === 'D') keys.d = false;
+            if (e.key === ' ') keys.space = false;
+        });
+
+        // Update player position and jumping
+        function updatePlayer() {
+            // Horizontal movement
+            if (keys.a && player.x > 0) {
+                player.x -= player.speed;
+            }
+            if (keys.d && player.x < canvas.width - player.width) {
+                player.x += player.speed;
+            }
+
+            // Jumping mechanics
+            if (player.jumping) {
+                // Apply vertical velocity
+                player.y -= player.verticalVelocity;
+                player.verticalVelocity -= player.gravity;
+
+                // Check if player has reached maximum jump height or landed
+                if (player.y >= player.originalY) {
+                    player.y = player.originalY;
+                    player.jumping = false;
+                    player.verticalVelocity = 0;
+                }
+            }
+        }
+
+        // Create new ball with diagonal movement
+        function createBall() {
+            return {
+                x: Math.random() * (canvas.width - ballRadius * 2),
+                y: 0,
+                radius: ballRadius,
+                speed: Math.random() * 3 + 2,
+                color: 'red',
+                // Add random diagonal movement
+                dx: (Math.random() - 0.5) * 2, // Random horizontal drift
+                dy: Math.random() * 3 + 2 // Vertical speed
+            };
+        }
+
+        // Update ball positions
+        function updateBalls() {
+            // Add new ball occasionally
+            if (Math.random() < 0.02) {
+                balls.push(createBall());
+            }
+
+            // Move balls with diagonal movement
+            for (let i = balls.length - 1; i >= 0; i--) {
+                balls[i].x += balls[i].dx;
+                balls[i].y += balls[i].dy;
+
+                // Bounce off sides of canvas
+                if (balls[i].x < 0 || balls[i].x > canvas.width) {
+                    balls[i].dx *= -1;
+                }
+
+                // Remove balls that are off screen
+                if (balls[i].y > canvas.height) {
+                    balls.splice(i, 1);
+                }
+            }
+        }
+
+        // Check for collisions
+        function checkCollisions() {
+            for (const ball of balls) {
+                // Check if ball hits player
+                if (
+                    ball.x > player.x &&
+                    ball.x < player.x + player.width &&
+                    ball.y + ball.radius > player.y &&
+                    ball.y - ball.radius < player.y + player.height
+                ) {
+                    gameOver = true;
+                }
+            }
+        }
+
+        // Draw everything
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // Draw balls
+            for (const ball of balls) {
+                ctx.beginPath();
+                ctx.fillStyle = ball.color;
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (!gameOver) {
+                updatePlayer();
+                updateBalls();
+                checkCollisions();
+                draw();
+
+                // Increment score
+                score++;
+                scoreDisplay.textContent = score;
+
+                // Continue game loop
+                requestAnimationFrame(gameLoop);
+            } else {
+                // Game over screen
+                ctx.fillStyle = 'black';
+                ctx.font = '30px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+                ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + 40);
+            }
+        }
+
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html>

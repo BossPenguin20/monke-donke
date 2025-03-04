@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dodging Balls Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #gameCanvas {
+            border: 2px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <canvas id="gameCanvas" width="500" height="500"></canvas>
+        <div style="text-align: center; margin-top: 10px;">
+            <p>Use A and D keys to move left and right</p>
+            <p>Score: <span id="scoreDisplay">0</span></p>
+        </div>
+    </div>
+
+    <script>
+        // Game configuration
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+
+        // Player properties
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height - 30,
+            width: 50,
+            height: 20,
+            speed: 5,
+            color: 'blue'
+        };
+
+        // Balls properties
+        const balls = [];
+        const ballRadius = 10;
+        let score = 0;
+        let gameOver = false;
+
+        // Player movement
+        const keys = {
+            a: false,
+            d: false
+        };
+
+        // Event listeners for key presses
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'a' || e.key === 'A') keys.a = true;
+            if (e.key === 'd' || e.key === 'D') keys.d = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'a' || e.key === 'A') keys.a = false;
+            if (e.key === 'd' || e.key === 'D') keys.d = false;
+        });
+
+        // Update player position
+        function updatePlayer() {
+            if (keys.a && player.x > 0) {
+                player.x -= player.speed;
+            }
+            if (keys.d && player.x < canvas.width - player.width) {
+                player.x += player.speed;
+            }
+        }
+
+        // Create new ball
+        function createBall() {
+            return {
+                x: Math.random() * (canvas.width - ballRadius * 2),
+                y: 0,
+                radius: ballRadius,
+                speed: Math.random() * 3 + 2,
+                color: 'red'
+            };
+        }
+
+        // Update ball positions
+        function updateBalls() {
+            // Add new ball occasionally
+            if (Math.random() < 0.02) {
+                balls.push(createBall());
+            }
+
+            // Move balls down
+            for (let i = balls.length - 1; i >= 0; i--) {
+                balls[i].y += balls[i].speed;
+
+                // Remove balls that are off screen
+                if (balls[i].y > canvas.height) {
+                    balls.splice(i, 1);
+                }
+            }
+        }
+
+        // Check for collisions
+        function checkCollisions() {
+            for (const ball of balls) {
+                // Check if ball hits player
+                if (
+                    ball.x > player.x &&
+                    ball.x < player.x + player.width &&
+                    ball.y + ball.radius > player.y &&
+                    ball.y - ball.radius < player.y + player.height
+                ) {
+                    gameOver = true;
+                }
+            }
+        }
+
+        // Draw everything
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // Draw balls
+            for (const ball of balls) {
+                ctx.beginPath();
+                ctx.fillStyle = ball.color;
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (!gameOver) {
+                updatePlayer();
+                updateBalls();
+                checkCollisions();
+                draw();
+
+                // Increment score
+                score++;
+                scoreDisplay.textContent = score;
+
+                // Continue game loop
+                requestAnimationFrame(gameLoop);
+            } else {
+                // Game over screen
+                ctx.fillStyle = 'black';
+                ctx.font = '30px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+                ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + 40);
+            }
+        }
+
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html>
